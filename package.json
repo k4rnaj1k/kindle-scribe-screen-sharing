@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node server.js",
     "build": "next build",
+    "build:tauri": "TAURI_BUILD=true next build",
     "start": "NODE_ENV=production node server.js",
     "lint": "eslint"
   },
@@ -17,6 +18,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/cli": "^2.10.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

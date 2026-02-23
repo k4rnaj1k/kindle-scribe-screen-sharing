@@ -15,37 +15,37 @@ export default function Home() {
   const [shouldConnect, setShouldConnect] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!shouldConnect) {
-      setIsConnected(false);
-      setHasFrame(false);
-      return;
-    }
+    let ws: WebSocket | null = null;
+    let unlisten: (() => void) | null = null;
 
-    // Determine WebSocket URL based on current origin
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/api/screen?ip=${encodeURIComponent(ip)}&port=${encodeURIComponent(port)}`;
+    const setupConnection = async () => {
+      if (!shouldConnect) {
+        setIsConnected(false);
+        setHasFrame(false);
 
-    const ws = new WebSocket(wsUrl);
-    ws.binaryType = "blob";
+        const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+        if (isTauri) {
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('stop_stream');
+          } catch (e) {
+            console.error("Failed to stop Tauri stream", e);
+          }
+        }
+        return;
+      }
 
-    ws.onopen = () => {
-      console.log("Connected to screen stream");
-      setIsConnected(true);
-      setIsError(false);
-    };
+      const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
-    ws.onmessage = async (event) => {
-      if (event.data instanceof Blob) {
+      const renderFrame = async (blob: Blob) => {
         try {
-          const bitmap = await window.createImageBitmap(event.data);
+          const bitmap = await window.createImageBitmap(blob);
           const canvas = canvasRef.current;
           if (canvas) {
             canvas.width = bitmap.width;
             canvas.height = bitmap.height;
             const ctx = canvas.getContext('2d');
             if (ctx) {
-              // Apply e-ink style filter
               ctx.filter = 'contrast(1.1) brightness(0.98) grayscale(1)';
               ctx.drawImage(bitmap, 0, 0);
               setHasFrame(true);
@@ -54,23 +54,68 @@ export default function Home() {
         } catch (e) {
           console.error("Failed to render frame to canvas", e);
         }
+      };
+
+      if (isTauri) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const { listen } = await import('@tauri-apps/api/event');
+
+          unlisten = await listen<number[]>('frame', async (event) => {
+            const u8 = new Uint8Array(event.payload);
+            const blob = new Blob([u8], { type: 'image/jpeg' });
+            await renderFrame(blob);
+          });
+
+          await invoke('start_stream', { ip, port });
+          console.log("Connected to screen stream (Tauri)");
+          setIsConnected(true);
+          setIsError(false);
+
+        } catch (error) {
+          console.error("Tauri connection error:", error);
+          setIsError(true);
+          setIsConnected(false);
+        }
+      } else {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const host = window.location.host;
+        const wsUrl = `${protocol}//${host}/api/screen?ip=${encodeURIComponent(ip)}&port=${encodeURIComponent(port)}`;
+
+        ws = new WebSocket(wsUrl);
+        ws.binaryType = "blob";
+
+        ws.onopen = () => {
+          console.log("Connected to screen stream (WebSocket)");
+          setIsConnected(true);
+          setIsError(false);
+        };
+
+        ws.onmessage = async (event) => {
+          if (event.data instanceof Blob) {
+            await renderFrame(event.data);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("WebSocket error:", error);
+          setIsError(true);
+          setIsConnected(false);
+        };
+
+        ws.onclose = () => {
+          console.log("Disconnected from screen stream");
+          setIsConnected(false);
+          setShouldConnect(false);
+        };
       }
     };
 
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      setIsError(true);
-      setIsConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log("Disconnected from screen stream");
-      setIsConnected(false);
-      setShouldConnect(false);
-    };
+    setupConnection();
 
     return () => {
-      ws.close();
+      if (ws) ws.close();
+      if (unlisten) unlisten();
     };
   }, [shouldConnect, ip, port]);
 
