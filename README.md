@@ -7,7 +7,7 @@ Simple screen sharing application for Kindle Scribe that allows viewing the scre
 
 ## Requirements:
 - Jailbroken Kindle Scribe(required)
-- Koreader(or another way of running ssh)
+- Koreader(or another way of running ssh *on Kindle*)
 - Laptop or PC with [Node.js](https://nodejs.org/en)
 - ffmpeg installed
 
