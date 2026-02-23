@@ -157,9 +157,10 @@ export default function Home() {
       {/* Kindle Scribe Device Mockup */}
       <div
         ref={containerRef}
-        className="bg-[#E5E7EB] rounded-[24px] sm:rounded-[40px] shadow-2xl overflow-hidden border-[#D1D5DB] border-[2px] flex flex-row"
+        className="bg-[#E5E7EB] rounded-[24px] sm:rounded-[40px] shadow-2xl overflow-hidden border-[#D1D5DB] border-[2px] flex flex-row transition-transform duration-300 ease-in-out origin-center"
         style={{
           width: 'min(98vw, 85vh, 1200px)',
+          transform: `rotate(${rotation}deg) ${rotation % 180 !== 0 ? 'scale(0.95)' : 'scale(1)'}`,
         }}
       >
         {/* The asymmetrical bezel: Scribe has a wider bezel on one side. */}
@@ -175,9 +176,8 @@ export default function Home() {
             <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-white">
               <canvas
                 ref={canvasRef}
-                className={`object-contain transition-transform duration-300 ease-in-out max-w-none origin-center ${hasFrame ? 'opacity-100' : 'opacity-0'}`}
+                className={`object-contain max-w-none origin-center ${hasFrame ? 'opacity-100' : 'opacity-0'}`}
                 style={{
-                  transform: `rotate(${rotation}deg) ${rotation % 180 !== 0 ? 'scale(1.333)' : 'scale(1)'}`, // 4/3 ratio offset
                   width: '100%',
                   height: '100%',
                 }}
