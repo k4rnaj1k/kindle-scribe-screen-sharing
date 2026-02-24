@@ -13,7 +13,9 @@ Simple screen sharing application for Kindle Scribe that allows viewing the scre
   - Can be installed on MacOS with [brew](https://formulae.brew.sh/formula/ffmpeg) 
 
 ## Instruction:
+### On kindle itself:
 1. Enable ssh in Koreader and add your public key to authorized_keys
+### On laptop/pc/macos
 2. Run `npm install` and `npm run dev`
 3. Open `http://localhost:3000` in your browser
 4. Check your Kindle's IP address
